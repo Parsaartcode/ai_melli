@@ -201,10 +201,10 @@ ai_melli/
 
 </div>
 
-<a href="https://star-history.com/#amirabolfazle/ai_melli&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=amirabolfazle/ai_melli&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=amirabolfazle/ai_melli&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=amirabolfazle/ai_melli&type=Date" />
-  </picture>
+<a href="https://www.star-history.com/?repos=amirabolfazle%2Fai_melli&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=amirabolfazle/ai_melli&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=amirabolfazle/ai_melli&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=amirabolfazle/ai_melli&type=date&legend=top-left" />
+ </picture>
 </a>
