@@ -1,9 +1,6 @@
 # ============================================================
 # 💬 AI Melli — Chat via GitHub Actions
 # ============================================================
-# این ورک‌فلو توسط اسکریپت chat.py فراخوانی می‌شه
-# کاربر پیام رو می‌فرسته، ورک‌فلو جواب AI رو تولید می‌کنه
-# ============================================================
 
 name: "💬 AI Chat"
 
@@ -32,6 +29,12 @@ on:
         default: "You are a helpful, friendly AI assistant. Respond in the same language the user writes in."
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+
 jobs:
   chat:
     runs-on: ubuntu-latest
@@ -40,35 +43,42 @@ jobs:
     steps:
       - name: "🤖 Generate Response"
         id: respond
-        shell: python3 {0}
+        env:
+          MESSAGES_JSON: ${{ github.event.inputs.messages_json }}
+          MODEL: ${{ github.event.inputs.model }}
+          SYSTEM_MESSAGE: ${{ github.event.inputs.system_message }}
+        shell: bash
         run: |
+          python3 << 'PYEOF'
           import urllib.request
           import json
           import os
           import sys
           import time
 
-          messages_json = os.environ["MESSAGES_JSON"]
-          model = os.environ["MODEL"]
-          system_msg = os.environ["SYSTEM_MESSAGE"]
+          messages_json = os.environ.get("MESSAGES_JSON", "[]")
+          model = os.environ.get("MODEL", "openai")
+          system_msg = os.environ.get("SYSTEM_MESSAGE", "You are a helpful assistant.")
 
           # Parse messages
           try:
               messages = json.loads(messages_json)
+              if not isinstance(messages, list):
+                  messages = [{"role": "user", "content": str(messages)}]
           except json.JSONDecodeError as e:
               with open("response.txt", "w") as f:
-                  f.write(f"JSON Error: {e}")
-              sys.exit(1)
+                  f.write(f"JSON Parse Error: {e}")
+              sys.exit(0)
 
-          # Ensure system message is first
-          if not messages or messages[0].get("role") != "system":
-              messages.insert(0, {"role": "system", "content": system_msg})
-          else:
-              messages[0]["content"] = system_msg
+          # Build full message array
+          full_messages = [{"role": "system", "content": system_msg}]
+          for m in messages:
+              if m.get("role") in ("user", "assistant") and m.get("content"):
+                  full_messages.append(m)
 
           # Build request
           payload = json.dumps({
-              "messages": messages,
+              "messages": full_messages,
               "model": model,
               "temperature": 0.7
           }).encode("utf-8")
@@ -87,8 +97,8 @@ jobs:
                   raw = resp.read().decode("utf-8")
           except Exception as e:
               with open("response.txt", "w") as f:
-                  f.write(f"Connection Error: {e}")
-              sys.exit(1)
+                  f.write(f"API Connection Error: {e}")
+              sys.exit(0)
 
           elapsed = time.time() - start
 
@@ -96,12 +106,7 @@ jobs:
           try:
               parsed = json.loads(raw)
               if isinstance(parsed, dict):
-                  text = (
-                      parsed
-                      .get("choices", [{}])[0]
-                      .get("message", {})
-                      .get("content", "")
-                  )
+                  text = parsed.get("choices", [{}])[0].get("message", {}).get("content", "")
                   if not text:
                       text = parsed.get("content", "")
                   if not text:
@@ -117,8 +122,8 @@ jobs:
           with open("response.txt", "w", encoding="utf-8") as f:
               f.write(text)
 
-          print(f"Response generated in {elapsed:.1f}s")
-          print(f"Length: {len(text)} chars")
+          print(f"Response: {len(text)} chars in {elapsed:.1f}s")
+          PYEOF
 
       - name: "📤 Upload Response"
         if: always()
@@ -127,3 +132,4 @@ jobs:
           name: chat-response
           path: response.txt
           retention-days: 1
+          if-no-files-found: warn
